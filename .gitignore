@@ -1,3 +1,4 @@
 _tileData
 *.osm
 game
+db.sqlite

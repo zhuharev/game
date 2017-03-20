@@ -45,6 +45,9 @@ func main() {
 			panic(err)
 		}
 	}()
+
+	SetDb()
+
 	time.Sleep(1 * time.Second)
 	//getBuildings()
 	nearby(54.7779274, 32.0219039)
@@ -86,6 +89,9 @@ func main() {
 
 		ctx.JSON(iris.StatusOK, buildings)
 	})
+	api.Get("/users/me", me)
+
+	api.Get("/auth", handleAuth)
 
 	app.Get("/", func(ctx *iris.Context) {
 		ctx.JSON(iris.StatusOK, iris.Map{"name": "iris"})
@@ -179,8 +185,8 @@ func nearby(lat, long float64) ([]Building, error) {
 							if err != nil {
 								panic(err)
 							}
-							b.Long = p.Coordinates[1]
-							b.Lat = p.Coordinates[0]
+							b.Long = p.Coordinates[0]
+							b.Lat = p.Coordinates[1]
 						}
 					}
 					buildings = append(buildings, b)
