@@ -12,11 +12,26 @@ type User struct {
 	VkId    int64  `json:"vk_id"`
 	VkToken string `json:"vk_token"`
 
+	Lon float64 `json:"lon"`
+	Lat float64 `json:"lat"`
+
+	Username string `json:"username,omitempty"`
+	FullName string `json:"full_name,omitempty"`
+	Sex      int    `json:"sex,omitempty"`
+
+	Balance int64 `json:"balance"`
+	Goods   Goods `xorm:"-" json:"goods,omitempty"`
+
 	Token string `json:"token"`
 
-	Created time.Time `xorm:"created" json:"-"`
+	Created time.Time `xorm:"created"`
 	Updated time.Time `xorm:"updated" json:"-"`
 	Deleted time.Time `xorm:"deleted" json:"-"`
+}
+
+type Goods struct {
+	Count     int        `json:"count"`
+	Buildings []Building `json:"buildings"`
 }
 
 type AuthForm struct {
@@ -102,6 +117,18 @@ func handleAuth(c *iris.Context) {
 	})
 }
 
+func getUser(id int64) (*User, error) {
+	var u = new(User)
+	has, err := db.Id(id).Get(u)
+	if err != nil {
+		return nil, err
+	}
+	if !has {
+		return nil, ErrNotFound
+	}
+	return u, nil
+}
+
 func me(c *iris.Context) {
 	token := c.FormValue("token")
 	if token == "" {
@@ -112,6 +139,38 @@ func me(c *iris.Context) {
 		c.JSON(200, err.Error())
 		return
 	}
+
+	buildings, err := getUserBuildings(u.Id)
+	if err != nil {
+		c.JSON(200, err.Error())
+		return
+	}
+	u.Goods.Buildings = buildings
+	u.Goods.Count = len(buildings)
+
 	u.Token = token
 	c.JSON(200, u)
+}
+
+func getUserBuildings(useId int64) ([]Building, error) {
+	var bs []Building
+	err := db.Where("owner_id = ?", useId).Find(&bs)
+	return bs, err
+}
+
+func getUserFromCtx(ctx *iris.Context) (*User, error) {
+	token := ctx.FormValue("token")
+	if token == "" {
+		return nil, fmt.Errorf("Token is nil")
+	}
+	fmt.Println("Get user by token", token)
+	return getUserByToken(token)
+}
+
+func setLocation(userId int64, lat, lon float64) error {
+	_, err := db.Exec("update user set lat = ?, lon = ? where id = ?", lat, lon, userId)
+	if err != nil {
+		return err
+	}
+	return nil
 }

@@ -3,9 +3,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/Unknwon/com"
-	"gopkg.in/kataras/iris.v6"
-	"gopkg.in/kataras/iris.v6/adaptors/httprouter"
 	"log"
 	"math"
 	"net/http"
@@ -13,13 +10,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/tidwall/tile38/controller"
-
-	"github.com/zhuharev/go-osm"
-
+	"github.com/Unknwon/com"
 	"github.com/garyburd/redigo/redis"
-
 	"github.com/mholt/binding"
+	"github.com/tidwall/tile38/controller"
+	"github.com/zhuharev/go-osm"
+	"gopkg.in/kataras/iris.v6"
+	"gopkg.in/kataras/iris.v6/adaptors/httprouter"
 )
 
 var (
@@ -49,7 +46,7 @@ func main() {
 	SetDb()
 
 	time.Sleep(1 * time.Second)
-	//getBuildings()
+
 	nearby(54.7779274, 32.0219039)
 	app := iris.New()
 	// output startup banner and error logs on os.Stdout
@@ -90,8 +87,43 @@ func main() {
 		ctx.JSON(iris.StatusOK, buildings)
 	})
 	api.Get("/users/me", me)
-
 	api.Get("/auth", handleAuth)
+	api.Get("/games/new", handleNewGame)
+	api.Get("/games/check", handleCheck)
+	api.Get("/location/update", func(ctx *iris.Context) {
+		user, err := getUserFromCtx(ctx)
+		if err != nil {
+			handleError(ctx, err)
+			return
+		}
+
+		arr := strings.Split(ctx.FormValue("location"), ",")
+		if len(arr) != 2 {
+			if err != nil {
+				handleError(ctx, fmt.Errorf("not 2"))
+				return
+			}
+		}
+
+		lat, err := strconv.ParseFloat(arr[0], 64)
+		if err != nil {
+			handleError(ctx, err)
+			return
+		}
+
+		lon, err := strconv.ParseFloat(arr[1], 64)
+		if err != nil {
+			handleError(ctx, err)
+			return
+		}
+
+		err = setLocation(user.Id, lat, lon)
+		if err != nil {
+			handleError(ctx, err)
+			return
+		}
+		ctx.JSON(200, "ok")
+	})
 
 	app.Get("/", func(ctx *iris.Context) {
 		ctx.JSON(iris.StatusOK, iris.Map{"name": "iris"})
@@ -105,12 +137,6 @@ func startTileServer() error {
 		return err
 	}
 	return nil
-}
-
-type Building struct {
-	Id   int64   `json:"id"`
-	Long float64 `json:"long"`
-	Lat  float64 `json:"lat"`
 }
 
 func getBuildings() (map[int][]float64, error) {
@@ -141,6 +167,10 @@ func getBuildings() (map[int][]float64, error) {
 				if err != nil {
 					panic(err)
 				}
+				err = createBuilding(&b)
+				if err != nil {
+					panic(err)
+				}
 				fmt.Printf("%s\n", ret)
 			}
 		}
@@ -149,6 +179,11 @@ func getBuildings() (map[int][]float64, error) {
 }
 
 type Point struct {
+	Lat float64 `json:"lat"`
+	Lon float64 `json:"lon"`
+}
+
+type geoPoint struct {
 	Coordinates []float64 `json:"coordinates"`
 }
 
@@ -176,7 +211,7 @@ func nearby(lat, long float64) ([]Building, error) {
 				switch item.(type) {
 				case []interface{}:
 					b := Building{}
-					p := Point{}
+					p := geoPoint{}
 					for _, iface := range item.([]interface{}) {
 						if b.Id == 0 {
 							b.Id = com.StrTo(string(iface.([]byte))).MustInt64()
@@ -239,4 +274,23 @@ func center(points [][]float64) []float64 {
 	xc /= P
 	yc /= P
 	return []float64{xc, yc}
+}
+
+func degreesToRadians(degrees float64) float64 {
+	return degrees * math.Pi / 180.0
+}
+
+func distance(lat1, lon1, lat2, lon2 float64) float64 {
+	var earthRadiusKm = 6371.0
+
+	var dLat = degreesToRadians(lat2 - lat1)
+	var dLon = degreesToRadians(lon2 - lon1)
+
+	lat1 = degreesToRadians(lat1)
+	lat2 = degreesToRadians(lat2)
+
+	var a = math.Sin(dLat/2.0)*math.Sin(dLat/2.0) +
+		math.Sin(dLon/2.0)*math.Sin(dLon/2.0)*math.Cos(lat1)*math.Cos(lat2)
+	var c = 2 * math.Atan2(math.Sqrt(a), math.Sqrt(1.0-a))
+	return earthRadiusKm * c
 }

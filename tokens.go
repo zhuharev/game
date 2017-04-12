@@ -29,7 +29,7 @@ func getUserByToken(tok string) (*User, error) {
 	} else if err != nil {
 		return nil, err
 	} else {
-		return nil, fmt.Errorf("User not found")
+		return nil, ErrNotFound
 	}
 }
 
