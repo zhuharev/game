@@ -55,37 +55,7 @@ func main() {
 	app.Adapt(httprouter.New())
 
 	api := app.Party("/api/v1")
-	api.Get("/buildings", func(ctx *iris.Context) {
-
-		cntr := new(Center)
-
-		errs := binding.Bind(ctx.Request, cntr)
-		if errs.Has("") {
-			fmt.Println(errs)
-		}
-
-		arr := strings.Split(cntr.LongLat, ",")
-		if len(arr) != 2 {
-			fmt.Println("Not 2")
-		}
-
-		lat, err := strconv.ParseFloat(arr[0], 64)
-		if err != nil {
-			fmt.Println(err)
-		}
-
-		lon, err := strconv.ParseFloat(arr[1], 64)
-		if err != nil {
-			fmt.Println(err)
-		}
-
-		buildings, err := nearby(lat, lon)
-		if err != nil {
-			fmt.Println(err)
-		}
-
-		ctx.JSON(iris.StatusOK, buildings)
-	})
+	api.Get("/buildings", handleBuildings)
 	api.Get("/users/me", me)
 	api.Get("/auth", handleAuth)
 	api.Get("/games/new", handleNewGame)

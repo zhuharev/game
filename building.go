@@ -34,3 +34,9 @@ func getBuilding(id int64) (*Building, error) {
 	}
 	return b, nil
 }
+
+func findBuildings(ids []int64) ([]Building, error) {
+	var buildings = []Building{}
+	err := db.In("id", ids).Find(&buildings)
+	return buildings, err
+}

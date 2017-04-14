@@ -1,8 +1,12 @@
 package main
 
 import (
+	"fmt"
 	"github.com/Unknwon/com"
+	"github.com/mholt/binding"
 	"gopkg.in/kataras/iris.v6"
+	"strconv"
+	"strings"
 )
 
 func handleNewGame(ctx *iris.Context) {
@@ -45,4 +49,45 @@ func handleError(ctx *iris.Context, err error) {
 			"error": err.Error(),
 		})
 	}
+}
+
+func handleBuildings(ctx *iris.Context) {
+
+	cntr := new(Center)
+
+	errs := binding.Bind(ctx.Request, cntr)
+	if errs.Has("") {
+		fmt.Println(errs)
+	}
+
+	arr := strings.Split(cntr.LongLat, ",")
+	if len(arr) != 2 {
+		fmt.Println("Not 2")
+	}
+
+	lat, err := strconv.ParseFloat(arr[0], 64)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	lon, err := strconv.ParseFloat(arr[1], 64)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	buildings, err := nearby(lat, lon)
+	if err != nil {
+		fmt.Println(err)
+	}
+	var ids []int64
+
+	for _, b := range buildings {
+		ids = append(ids, b.Id)
+	}
+	buildings, err = findBuildings(ids)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	ctx.JSON(iris.StatusOK, buildings)
 }
