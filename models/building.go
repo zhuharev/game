@@ -1,7 +1,9 @@
-package main
+package models
 
 import (
 	"time"
+
+	"github.com/zhuharev/game/modules/tile38"
 )
 
 type Building struct {
@@ -38,8 +40,31 @@ func getBuilding(id int64) (*Building, error) {
 	return b, nil
 }
 
-func findBuildings(ids []int64) ([]Building, error) {
+func FindBuildings(ids []int64) ([]Building, error) {
 	var buildings = []Building{}
 	err := db.In("id", ids).Find(&buildings)
 	return buildings, err
+}
+
+func Nearby(lat, long float64) ([]Building, error) {
+	m, e := tile38.Nearby(lat, long)
+	if e != nil {
+		return nil, e
+	}
+	return makeBuildingsFromMap(m), nil
+}
+
+func makeBuildingsFromMap(in map[int64][]float64) []Building {
+	var res []Building
+	for id, points := range in {
+		if len(points) != 2 {
+			continue
+		}
+		res = append(res, Building{
+			Id:   id,
+			Lat:  points[0],
+			Long: points[1],
+		})
+	}
+	return res
 }

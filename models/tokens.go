@@ -1,4 +1,4 @@
-package main
+package models
 
 import (
 	"crypto/rand"
@@ -22,7 +22,7 @@ func NewToken(userId int64) (*Token, error) {
 	return t, err
 }
 
-func getUserByToken(tok string) (*User, error) {
+func GetUserByToken(tok string) (*User, error) {
 	var u = new(User)
 	if has, err := db.Sql("select * from user where id = ( select user_id from token where token = ? )", tok).Get(u); has { // .Where("token = ?", tok).Get(&t); has {
 		return u, nil

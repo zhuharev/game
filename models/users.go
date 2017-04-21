@@ -1,8 +1,8 @@
-package main
+package models
 
 import (
 	"fmt"
-	"github.com/fatih/color"
+	//"github.com/fatih/color"
 	"gopkg.in/kataras/iris.v6"
 	"time"
 )
@@ -93,31 +93,6 @@ type UserStore interface {
 	Get()
 }
 
-func handleAuth(c *iris.Context) {
-	var aform AuthForm
-	err := c.ReadForm(&aform)
-	if err != nil {
-		color.Red("%s", err)
-		c.JSON(200, err.Error())
-		return
-	}
-
-	u, err := AuthUser(aform)
-	if err != nil {
-		color.Red("%s", err)
-		c.JSON(200, err.Error())
-		return
-	}
-
-	c.JSON(200, struct {
-		Id    int64  `json:"user_id"`
-		Token string `json:"token"`
-	}{
-		u.Id,
-		u.Token,
-	})
-}
-
 func getUser(id int64) (*User, error) {
 	var u = new(User)
 	has, err := db.Id(id).Get(u)
@@ -130,45 +105,22 @@ func getUser(id int64) (*User, error) {
 	return u, nil
 }
 
-func me(c *iris.Context) {
-	token := c.FormValue("token")
-	if token == "" {
-		c.JSON(200, "token is nil")
-	}
-	u, err := getUserByToken(token)
-	if err != nil {
-		c.JSON(200, err.Error())
-		return
-	}
-
-	buildings, err := getUserBuildings(u.Id)
-	if err != nil {
-		c.JSON(200, err.Error())
-		return
-	}
-	u.Goods.Buildings = buildings
-	u.Goods.Count = len(buildings)
-
-	u.Token = token
-	c.JSON(200, u)
-}
-
-func getUserBuildings(useId int64) ([]Building, error) {
+func GetUserBuildings(useId int64) ([]Building, error) {
 	var bs []Building
 	err := db.Where("owner_id = ?", useId).Find(&bs)
 	return bs, err
 }
 
-func getUserFromCtx(ctx *iris.Context) (*User, error) {
+func GetUserFromCtx(ctx *iris.Context) (*User, error) {
 	token := ctx.FormValue("token")
 	if token == "" {
 		return nil, fmt.Errorf("Token is nil")
 	}
 	fmt.Println("Get user by token", token)
-	return getUserByToken(token)
+	return GetUserByToken(token)
 }
 
-func setLocation(userId int64, lat, lon float64) error {
+func SetLocation(userId int64, lat, lon float64) error {
 	_, err := db.Exec("update user set lat = ?, lon = ? where id = ?", lat, lon, userId)
 	if err != nil {
 		return err

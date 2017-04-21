@@ -1,22 +1,25 @@
-package main
+package lib
 
 import (
 	"fmt"
 	"github.com/Unknwon/com"
+	"github.com/fatih/color"
 	"github.com/mholt/binding"
 	"gopkg.in/kataras/iris.v6"
 	"strconv"
 	"strings"
+
+	"github.com/zhuharev/game/models"
 )
 
 func handleNewGame(ctx *iris.Context) {
-	user, err := getUserFromCtx(ctx)
+	user, err := models.GetUserFromCtx(ctx)
 	if err != nil {
 		handleError(ctx, err)
 		return
 	}
 	buildingId := com.StrTo(ctx.FormValue("building_id")).MustInt64()
-	game, err := newGame(user.Id, buildingId)
+	game, err := models.NewGame(user.Id, buildingId)
 	if err != nil {
 		handleError(ctx, err)
 		return
@@ -25,13 +28,13 @@ func handleNewGame(ctx *iris.Context) {
 }
 
 func handleCheck(ctx *iris.Context) {
-	user, err := getUserFromCtx(ctx)
+	user, err := models.GetUserFromCtx(ctx)
 	if err != nil {
 		handleError(ctx, err)
 		return
 	}
 	answer := com.StrTo(ctx.FormValue("answer")).MustInt()
-	bulls, cows, err := check(user, com.StrTo(ctx.FormValue("game_id")).MustInt64(), answer)
+	bulls, cows, err := models.Check(user, com.StrTo(ctx.FormValue("game_id")).MustInt64(), answer)
 	if err != nil {
 		handleError(ctx, err)
 		return
@@ -75,7 +78,7 @@ func handleBuildings(ctx *iris.Context) {
 		fmt.Println(err)
 	}
 
-	buildings, err := nearby(lat, lon)
+	buildings, err := models.Nearby(lat, lon)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -84,10 +87,58 @@ func handleBuildings(ctx *iris.Context) {
 	for _, b := range buildings {
 		ids = append(ids, b.Id)
 	}
-	buildings, err = findBuildings(ids)
+	buildings, err = models.FindBuildings(ids)
 	if err != nil {
 		fmt.Println(err)
 	}
 
 	ctx.JSON(iris.StatusOK, buildings)
+}
+
+func handleAuth(c *iris.Context) {
+	var aform models.AuthForm
+	err := c.ReadForm(&aform)
+	if err != nil {
+		color.Red("%s", err)
+		c.JSON(200, err.Error())
+		return
+	}
+
+	u, err := models.AuthUser(aform)
+	if err != nil {
+		color.Red("%s", err)
+		c.JSON(200, err.Error())
+		return
+	}
+
+	c.JSON(200, struct {
+		Id    int64  `json:"user_id"`
+		Token string `json:"token"`
+	}{
+		u.Id,
+		u.Token,
+	})
+}
+
+func me(c *iris.Context) {
+	token := c.FormValue("token")
+	if token == "" {
+		c.JSON(200, "token is nil")
+	}
+	u, err := models.GetUserByToken(token)
+	if err != nil {
+		c.JSON(200, err.Error())
+		return
+	}
+
+	buildings, err := models.GetUserBuildings(u.Id)
+	if err != nil {
+		c.JSON(200, err.Error())
+		return
+	}
+	u.Goods.Buildings = buildings
+	u.Goods.Count = len(buildings)
+
+	u.Token = token
+	c.JSON(200, u)
 }
