@@ -12,6 +12,9 @@ type Building struct {
 
 	OwnerId int64 `json:"owner_id"`
 
+	Armor  int64 `json:"armor"`
+	Profit int64 `json:"profit"`
+
 	Updated time.Time `xorm:"updated"`
 }
 

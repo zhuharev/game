@@ -87,8 +87,14 @@ func check(u *User, gameId int64, answer int) (bulls int, cows int, err error) {
 		return
 	}
 
+	build, err := getBuilding(game.BuildingId)
+	if err != nil {
+		return
+	}
+
 	fmt.Printf("Check game(%d): answer=%d (b:%d, c:%d)\n", game.Secret, answer, bulls, cows)
 
+	// win
 	if bulls == 4 {
 		game.Status = 1
 		_, err = db.Id(game.Id).Update(game)
@@ -96,6 +102,10 @@ func check(u *User, gameId int64, answer int) (bulls int, cows int, err error) {
 			return
 		}
 		_, err = db.Exec("update building set owner_id = ? where id = ?", u.Id, game.BuildingId)
+		if err != nil {
+			return
+		}
+		_, err = db.Exec("update user set profit = profit + ? where id = ?", build.Profit, u.Id)
 		if err != nil {
 			return
 		}
