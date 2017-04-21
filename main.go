@@ -47,6 +47,16 @@ func main() {
 
 	time.Sleep(1 * time.Second)
 
+	go func() {
+		tick := time.NewTicker(1 * time.Minute)
+		for range tick.C {
+			err := IncreaseBalance()
+			if err != nil {
+				log.Println(err)
+			}
+		}
+	}()
+
 	nearby(54.7779274, 32.0219039)
 	app := iris.New()
 	// output startup banner and error logs on os.Stdout

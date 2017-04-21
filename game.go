@@ -38,14 +38,14 @@ func newGame(userId, buildingId int64) (*Game, error) {
 		return nil, fmt.Errorf("Already owner")
 	}
 
-	if dist := distance(
-		user.Lat,
-		user.Lon,
-		building.Lat,
-		building.Long,
-	); dist > MaxDistance {
-		return nil, fmt.Errorf("Подойдите ближе!")
-	}
+	/*	if dist := distance(
+			user.Lat,
+			user.Lon,
+			building.Lat,
+			building.Long,
+		); dist > MaxDistance {
+			return nil, fmt.Errorf("Подойдите ближе!")
+		}*/
 
 	game := &Game{
 		UserId:     user.Id,

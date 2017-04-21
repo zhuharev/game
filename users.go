@@ -19,8 +19,9 @@ type User struct {
 	FullName string `json:"full_name,omitempty"`
 	Sex      int    `json:"sex,omitempty"`
 
-	Balance int64 `json:"balance"`
-	Goods   Goods `xorm:"-" json:"goods,omitempty"`
+	Balance Balance `json:"balance"`
+	Profit  int64   `json:"profit"`
+	Goods   Goods   `xorm:"-" json:"goods,omitempty"`
 
 	Token string `json:"token"`
 
