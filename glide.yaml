@@ -1,0 +1,25 @@
+package: github.com/zhuharev/game
+import:
+- package: github.com/Unknwon/com
+  version: v1
+- package: github.com/fatih/color
+  version: v1.4.1
+- package: github.com/garyburd/redigo
+  version: v1.0.0
+  subpackages:
+  - redis
+- package: github.com/go-xorm/xorm
+  version: v0.6.2
+- package: github.com/mattn/go-sqlite3
+  version: v1.2.0
+- package: github.com/mholt/binding
+  version: v0.3.0
+- package: github.com/monoculum/formam
+  version: v2.0
+- package: github.com/tidwall/tile38
+  version: 1.9.0
+  subpackages:
+  - controller
+- package: github.com/zhuharev/go-osm
+- package: gopkg.in/macaron.v1
+  version: v1.2.1

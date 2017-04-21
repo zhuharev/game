@@ -2,3 +2,6 @@ _tileData
 *.osm
 game
 db.sqlite
+
+vendor
+glide.lock
