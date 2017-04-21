@@ -9,11 +9,11 @@ import (
 	"time"
 
 	"github.com/mholt/binding"
+	"gopkg.in/macaron.v1"
 
 	"github.com/zhuharev/game/models"
+	"github.com/zhuharev/game/modules/middleware"
 	"github.com/zhuharev/game/modules/tile38"
-	"gopkg.in/kataras/iris.v6"
-	"gopkg.in/kataras/iris.v6/adaptors/httprouter"
 )
 
 type Center struct {
@@ -48,56 +48,55 @@ func Run() {
 		}
 	}()
 
-	app := iris.New()
-	// output startup banner and error logs on os.Stdout
-	app.Adapt(iris.DevLogger())
-	// set the router, you can choose gorillamux too
-	app.Adapt(httprouter.New())
+	m := macaron.New()
+	m.Use(macaron.Renderer())
+	m.Use(middleware.Contexter())
 
-	api := app.Party("/api/v1")
-	api.Get("/buildings", handleBuildings)
-	api.Get("/users/me", me)
-	api.Get("/auth", handleAuth)
-	api.Get("/games/new", handleNewGame)
-	api.Get("/games/check", handleCheck)
-	api.Get("/location/update", func(ctx *iris.Context) {
-		user, err := models.GetUserFromCtx(ctx)
-		if err != nil {
-			handleError(ctx, err)
-			return
-		}
-
-		arr := strings.Split(ctx.FormValue("location"), ",")
-		if len(arr) != 2 {
+	m.Group("/api/v1", func() {
+		m.Get("/buildings", handleBuildings)
+		m.Get("/users/me", me)
+		m.Get("/auth", handleAuth)
+		m.Get("/games/new", handleNewGame)
+		m.Get("/games/check", handleCheck)
+		m.Get("/location/update", func(ctx *middleware.Context) {
+			user, err := models.GetUserFromCtx(ctx)
 			if err != nil {
-				handleError(ctx, fmt.Errorf("not 2"))
+				handleError(ctx, err)
 				return
 			}
-		}
 
-		lat, err := strconv.ParseFloat(arr[0], 64)
-		if err != nil {
-			handleError(ctx, err)
-			return
-		}
+			arr := strings.Split(ctx.Query("location"), ",")
+			if len(arr) != 2 {
+				if err != nil {
+					handleError(ctx, fmt.Errorf("not 2"))
+					return
+				}
+			}
 
-		lon, err := strconv.ParseFloat(arr[1], 64)
-		if err != nil {
-			handleError(ctx, err)
-			return
-		}
+			lat, err := strconv.ParseFloat(arr[0], 64)
+			if err != nil {
+				handleError(ctx, err)
+				return
+			}
 
-		err = models.SetLocation(user.Id, lat, lon)
-		if err != nil {
-			handleError(ctx, err)
-			return
-		}
-		ctx.JSON(200, "ok")
+			lon, err := strconv.ParseFloat(arr[1], 64)
+			if err != nil {
+				handleError(ctx, err)
+				return
+			}
+
+			err = models.SetLocation(user.Id, lat, lon)
+			if err != nil {
+				handleError(ctx, err)
+				return
+			}
+			ctx.JSON(200, "ok")
+		})
 	})
 
-	app.Get("/", func(ctx *iris.Context) {
-		ctx.JSON(iris.StatusOK, iris.Map{"name": "iris"})
+	m.Get("/", func(ctx *middleware.Context) {
+		ctx.JSON(200, map[string]interface{}{"name": "iris"})
 	})
 
-	app.Listen(":7000")
+	m.Run(7000)
 }

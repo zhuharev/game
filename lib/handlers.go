@@ -2,23 +2,24 @@ package lib
 
 import (
 	"fmt"
-	"github.com/Unknwon/com"
-	"github.com/fatih/color"
-	"github.com/mholt/binding"
-	"gopkg.in/kataras/iris.v6"
 	"strconv"
 	"strings"
 
+	"github.com/Unknwon/com"
+	"github.com/fatih/color"
+	"github.com/mholt/binding"
+
 	"github.com/zhuharev/game/models"
+	"github.com/zhuharev/game/modules/middleware"
 )
 
-func handleNewGame(ctx *iris.Context) {
+func handleNewGame(ctx *middleware.Context) {
 	user, err := models.GetUserFromCtx(ctx)
 	if err != nil {
 		handleError(ctx, err)
 		return
 	}
-	buildingId := com.StrTo(ctx.FormValue("building_id")).MustInt64()
+	buildingId := com.StrTo(ctx.Query("building_id")).MustInt64()
 	game, err := models.NewGame(user.Id, buildingId)
 	if err != nil {
 		handleError(ctx, err)
@@ -27,38 +28,38 @@ func handleNewGame(ctx *iris.Context) {
 	ctx.JSON(200, game)
 }
 
-func handleCheck(ctx *iris.Context) {
+func handleCheck(ctx *middleware.Context) {
 	user, err := models.GetUserFromCtx(ctx)
 	if err != nil {
 		handleError(ctx, err)
 		return
 	}
-	answer := com.StrTo(ctx.FormValue("answer")).MustInt()
-	bulls, cows, err := models.Check(user, com.StrTo(ctx.FormValue("game_id")).MustInt64(), answer)
+	answer := com.StrTo(ctx.Query("answer")).MustInt()
+	bulls, cows, err := models.Check(user, com.StrTo(ctx.Query("game_id")).MustInt64(), answer)
 	if err != nil {
 		handleError(ctx, err)
 		return
 	}
-	ctx.JSON(200, iris.Map{
+	ctx.JSON(200, map[string]interface{}{
 		"answer": answer,
 		"bulls":  bulls,
 		"cows":   cows,
 	})
 }
 
-func handleError(ctx *iris.Context, err error) {
+func handleError(ctx *middleware.Context, err error) {
 	if err != nil {
-		ctx.JSON(200, iris.Map{
+		ctx.JSON(200, map[string]interface{}{
 			"error": err.Error(),
 		})
 	}
 }
 
-func handleBuildings(ctx *iris.Context) {
+func handleBuildings(ctx *middleware.Context) {
 
 	cntr := new(Center)
 
-	errs := binding.Bind(ctx.Request, cntr)
+	errs := binding.Bind(ctx.Context.Req.Request, cntr)
 	if errs.Has("") {
 		fmt.Println(errs)
 	}
@@ -92,10 +93,10 @@ func handleBuildings(ctx *iris.Context) {
 		fmt.Println(err)
 	}
 
-	ctx.JSON(iris.StatusOK, buildings)
+	ctx.JSON(200, buildings)
 }
 
-func handleAuth(c *iris.Context) {
+func handleAuth(c *middleware.Context) {
 	var aform models.AuthForm
 	err := c.ReadForm(&aform)
 	if err != nil {
@@ -120,8 +121,8 @@ func handleAuth(c *iris.Context) {
 	})
 }
 
-func me(c *iris.Context) {
-	token := c.FormValue("token")
+func me(c *middleware.Context) {
+	token := c.Query("token")
 	if token == "" {
 		c.JSON(200, "token is nil")
 	}

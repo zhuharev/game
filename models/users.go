@@ -2,9 +2,9 @@ package models
 
 import (
 	"fmt"
-	//"github.com/fatih/color"
-	"gopkg.in/kataras/iris.v6"
 	"time"
+
+	"github.com/zhuharev/game/modules/middleware"
 )
 
 type User struct {
@@ -111,12 +111,11 @@ func GetUserBuildings(useId int64) ([]Building, error) {
 	return bs, err
 }
 
-func GetUserFromCtx(ctx *iris.Context) (*User, error) {
-	token := ctx.FormValue("token")
+func GetUserFromCtx(ctx *middleware.Context) (*User, error) {
+	token := ctx.Query("token")
 	if token == "" {
 		return nil, fmt.Errorf("Token is nil")
 	}
-	fmt.Println("Get user by token", token)
 	return GetUserByToken(token)
 }
 
