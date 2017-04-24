@@ -113,7 +113,7 @@ func handleAuth(c *middleware.Context) {
 	}
 
 	c.JSON(200, struct {
-		Id    int64  `json:"user_id"`
+		Id    int64  `json:"id"`
 		Token string `json:"token"`
 	}{
 		u.Id,
