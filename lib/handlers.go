@@ -11,6 +11,7 @@ import (
 
 	"github.com/zhuharev/game/models"
 	"github.com/zhuharev/game/modules/middleware"
+	"github.com/zhuharev/game/modules/vk"
 )
 
 func handleNewGame(ctx *middleware.Context) {
@@ -104,6 +105,16 @@ func handleAuth(c *middleware.Context) {
 		c.JSON(200, err.Error())
 		return
 	}
+
+	vkID, err := vk.CheckToken(aform.VkToken)
+	if err != nil {
+		if err != nil {
+			color.Red("%s", err)
+			c.JSON(200, err.Error())
+			return
+		}
+	}
+	aform.VkId = int64(vkID)
 
 	u, err := models.AuthUser(aform)
 	if err != nil {
