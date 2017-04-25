@@ -65,7 +65,6 @@ func AuthUser(af AuthForm) (*User, error) {
 	} else {
 		return createUser(af)
 	}
-	return nil, nil
 }
 
 func createUser(af AuthForm) (*User, error) {
