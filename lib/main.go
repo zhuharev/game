@@ -54,7 +54,7 @@ func Run() {
 
 	m.Group("/api/v1", func() {
 		m.Get("/buildings", handleBuildings)
-		m.Get("/users/me", me)
+		m.Get("/user", me)
 		m.Get("/auth", handleAuth)
 		m.Get("/games/new", handleNewGame)
 		m.Get("/games/check", handleCheck)
