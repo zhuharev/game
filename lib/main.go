@@ -49,7 +49,9 @@ func Run() {
 	}()
 
 	m := macaron.New()
-	m.Use(macaron.Renderer())
+	m.Use(macaron.Renderer(macaron.RenderOptions{
+		IndentJSON: true,
+	}))
 	m.Use(middleware.Contexter())
 
 	m.Group("/api/v1", func() {
