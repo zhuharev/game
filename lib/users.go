@@ -10,7 +10,7 @@ import (
 func handleUsers(c *middleware.Context) {
 	var (
 		offsetID    = c.QueryInt("offset_id")
-		itemsInPage = c.QueryInt("items_in_page")
+		itemsInPage = c.QueryInt("items_per_page")
 	)
 	if itemsInPage == 0 {
 		itemsInPage = 10
