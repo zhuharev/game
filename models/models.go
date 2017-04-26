@@ -3,11 +3,12 @@ package models
 import (
 	"errors"
 	"fmt"
+	"math/rand"
+	"time"
+
 	"github.com/Unknwon/com"
 	"github.com/go-xorm/xorm"
 	_ "github.com/mattn/go-sqlite3"
-	"math/rand"
-	"time"
 
 	"github.com/zhuharev/game/modules/tile38"
 )
@@ -34,6 +35,11 @@ func SetDb() {
 		panic(err)
 	}
 	db.ShowSQL(false)
+
+	err = Migrate(db)
+	if err != nil {
+		panic(err)
+	}
 
 	err = db.Sync2(
 		new(User),
