@@ -112,7 +112,7 @@ func UserGet(id int64) (*User, error) {
 
 // UserFindByIds returns users by his ids
 func UserFindByIds(ids []int64, offsetLimit ...int) (users []User, err error) {
-	err = db.Cols("id", "first_name", "last_name").In("id", ids).Find(&users)
+	err = db.Cols("id", "full_name").In("id", ids).Find(&users)
 	if err != nil {
 		return nil, err
 	}
@@ -132,7 +132,7 @@ func UserFind(offsetIDLimit ...int) (users []User, err error) {
 		}
 	}
 
-	err = db.Where("id > ?", offsetID).Cols("id", "first_name", "last_name").Limit(limit).Find(&users)
+	err = db.Where("id > ?", offsetID).Cols("id", "full_name").Limit(limit).Find(&users)
 	if err != nil {
 		return nil, err
 	}
