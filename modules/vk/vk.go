@@ -7,15 +7,19 @@ import (
 )
 
 // CheckToken return user id of vk.com user
-func CheckToken(token string) (int, error) {
-	u := vkutil.New()
+func CheckToken(token string) (user vkutil.User, err error) {
+	var (
+		u   = vkutil.New()
+		res []vkutil.User
+	)
 	u.VkApi.AccessToken = token
-	res, err := u.UsersGet(nil)
+	res, err = u.UsersGet(nil)
 	if err != nil {
-		return 0, err
+		return
 	}
 	if len(res) != 1 {
-		return 0, fmt.Errorf("Token invalid")
+		err = fmt.Errorf("Token invalid")
+		return
 	}
-	return res[0].Id, nil
+	return res[0], nil
 }
