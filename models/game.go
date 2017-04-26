@@ -27,7 +27,7 @@ type Game struct {
 }
 
 func NewGame(userId, buildingId int64) (*Game, error) {
-	user, err := getUser(userId)
+	user, err := UserGet(userId)
 	if err != nil {
 		return nil, err
 	}

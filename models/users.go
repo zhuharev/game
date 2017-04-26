@@ -9,23 +9,23 @@ import (
 
 type User struct {
 	Id      int64  `json:"id"`
-	VkId    int64  `json:"vk_id"`
-	VkToken string `json:"vk_token"`
+	VkId    int64  `json:"vk_id,omitempty"`
+	VkToken string `json:"vk_token,omitempty"`
 
-	Lon float64 `json:"lon"`
-	Lat float64 `json:"lat"`
+	Lon float64 `json:"lon,omitempty"`
+	Lat float64 `json:"lat,omitempty"`
 
 	Username string `json:"username,omitempty"`
 	FullName string `json:"full_name,omitempty"`
 	Sex      int    `json:"sex,omitempty"`
 
-	Balance Balance `json:"balance"`
-	Profit  int64   `json:"profit"`
+	Balance Balance `json:"balance,omitempty"`
+	Profit  int64   `json:"profit,omitempty"`
 	Goods   Goods   `xorm:"-" json:"goods,omitempty"`
 
-	Token string `json:"token"`
+	Token string `json:"token,omitempty"`
 
-	Created time.Time `xorm:"created"`
+	Created time.Time `xorm:"created" json:"created,omitempty"`
 	Updated time.Time `xorm:"updated" json:"-"`
 	Deleted time.Time `xorm:"deleted" json:"-"`
 }
@@ -38,9 +38,12 @@ type Goods struct {
 type AuthForm struct {
 	VkId    int64  `form:"vk_id"`
 	VkToken string `form:"vk_token"`
+
+	FirstName string
+	LastName  string
 }
 
-// todo check token is valid
+// AuthUser create or return existing user
 func AuthUser(af AuthForm) (*User, error) {
 	var (
 		u = new(User)
@@ -55,6 +58,8 @@ func AuthUser(af AuthForm) (*User, error) {
 			return nil, err
 		}
 		u.Token = t.Token
+		name := fmt.Sprintf("%s %s", af.LastName, af.FirstName)
+		u.FullName = name
 		_, err = db.Id(u.Id).Update(u)
 		if err != nil {
 			return nil, err
@@ -69,8 +74,9 @@ func AuthUser(af AuthForm) (*User, error) {
 
 func createUser(af AuthForm) (*User, error) {
 	u := &User{
-		VkId:    af.VkId,
-		VkToken: af.VkToken,
+		VkId:     af.VkId,
+		VkToken:  af.VkToken,
+		FullName: fmt.Sprintf("%s %s", af.LastName, af.FirstName),
 	}
 	_, err := db.Insert(u)
 	if err != nil {
@@ -92,16 +98,45 @@ type UserStore interface {
 	Get()
 }
 
-func getUser(id int64) (*User, error) {
+// UserGet get return user by id
+func UserGet(id int64) (*User, error) {
 	var u = new(User)
-	has, err := db.Id(id).Get(u)
+	if has, err := db.Id(id).Get(u); has {
+		return u, nil
+	} else if err != nil {
+		return nil, err
+	} else {
+		return nil, ErrNotFound
+	}
+}
+
+// UserFindByIds returns users by his ids
+func UserFindByIds(ids []int64, offsetLimit ...int) (users []User, err error) {
+	err = db.Cols("id", "first_name", "last_name").In("id", ids).Find(&users)
 	if err != nil {
 		return nil, err
 	}
-	if !has {
-		return nil, ErrNotFound
+	return
+}
+
+// UserFind returns users with pagination
+func UserFind(offsetIDLimit ...int) (users []User, err error) {
+	var (
+		offsetID = 0
+		limit    = 10
+	)
+	if len(offsetIDLimit) > 0 {
+		offsetID = offsetIDLimit[0]
+		if len(offsetIDLimit) > 1 && offsetIDLimit[1] > 0 {
+			limit = offsetIDLimit[1]
+		}
 	}
-	return u, nil
+
+	err = db.Where("id > ?", offsetID).Cols("id", "first_name", "last_name").Limit(limit).Find(&users)
+	if err != nil {
+		return nil, err
+	}
+	return
 }
 
 func GetUserBuildings(useId int64) ([]Building, error) {

@@ -46,6 +46,12 @@ func FindBuildings(ids []int64) ([]Building, error) {
 	return buildings, err
 }
 
+// BuildingsGetByOwners return all buildings by owner ids
+func BuildingsGetByOwners(ownerIds []int64) (buildings []Building, err error) {
+	err = db.In("owner_id", ownerIds).Find(&buildings)
+	return
+}
+
 func Nearby(lat, long float64) ([]Building, error) {
 	m, e := tile38.Nearby(lat, long)
 	if e != nil {
