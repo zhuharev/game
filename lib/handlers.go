@@ -94,7 +94,22 @@ func handleBuildings(ctx *middleware.Context) {
 		fmt.Println(err)
 	}
 
-	ctx.JSON(200, buildings)
+	var ownerIds []int64
+	for _, b := range buildings {
+		if b.OwnerId != 0 {
+			ownerIds = append(ownerIds, b.OwnerId)
+		}
+	}
+
+	users, err := models.UserFindByIds(ownerIds)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	ctx.JSON(200, map[string]interface{}{
+		"buildings": buildings,
+		"users":     users,
+	})
 }
 
 func handleAuth(c *middleware.Context) {
@@ -106,7 +121,7 @@ func handleAuth(c *middleware.Context) {
 		return
 	}
 
-	vkID, err := vk.CheckToken(aform.VkToken)
+	user, err := vk.CheckToken(aform.VkToken)
 	if err != nil {
 		if err != nil {
 			color.Red("%s", err)
@@ -114,7 +129,7 @@ func handleAuth(c *middleware.Context) {
 			return
 		}
 	}
-	aform.VkId = int64(vkID)
+	aform.VkId = int64(user.Id)
 
 	u, err := models.AuthUser(aform)
 	if err != nil {
