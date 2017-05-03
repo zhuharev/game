@@ -13,6 +13,7 @@ func CheckToken(token string) (user vkutil.User, err error) {
 		res []vkutil.User
 	)
 	u.VkApi.AccessToken = token
+	u.VkApi.Lang = "ru"
 	res, err = u.UsersGet(nil)
 	if err != nil {
 		return
