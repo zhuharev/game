@@ -130,6 +130,8 @@ func handleAuth(c *middleware.Context) {
 		}
 	}
 	aform.VkId = int64(user.Id)
+	aform.FirstName = user.FirstName
+	aform.LastName = user.LastName
 
 	u, err := models.AuthUser(aform)
 	if err != nil {

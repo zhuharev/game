@@ -58,7 +58,7 @@ func AuthUser(af AuthForm) (*User, error) {
 			return nil, err
 		}
 		u.Token = t.Token
-		name := fmt.Sprintf("%s %s", af.LastName, af.FirstName)
+		name := fmt.Sprintf("%s %s", af.FirstName, af.LastName)
 		u.FullName = name
 		_, err = db.Id(u.Id).Update(u)
 		if err != nil {
@@ -76,7 +76,7 @@ func createUser(af AuthForm) (*User, error) {
 	u := &User{
 		VkId:     af.VkId,
 		VkToken:  af.VkToken,
-		FullName: fmt.Sprintf("%s %s", af.LastName, af.FirstName),
+		FullName: fmt.Sprintf("%s %s", af.FirstName, af.LastName),
 	}
 	_, err := db.Insert(u)
 	if err != nil {
