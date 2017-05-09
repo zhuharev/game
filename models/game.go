@@ -103,6 +103,10 @@ func Check(u *User, gameId int64, answer int) (bulls int, cows int, err error) {
 		if err != nil {
 			return
 		}
+		_, err = db.Exec("update user set profit = profit - ? where id = (select owner_id from building where id = ?)", build.Profit, build.Id)
+		if err != nil {
+			return
+		}
 		_, err = db.Exec("update building set owner_id = ? where id = ?", u.Id, game.BuildingId)
 		if err != nil {
 			return
