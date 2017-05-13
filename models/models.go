@@ -9,8 +9,6 @@ import (
 	"github.com/Unknwon/com"
 	"github.com/go-xorm/xorm"
 	_ "github.com/mattn/go-sqlite3"
-
-	"github.com/zhuharev/game/modules/tile38"
 )
 
 var (
@@ -23,12 +21,9 @@ const (
 	allowedLength = 4
 )
 
+// SetDb init models
 func SetDb() {
 	var err error
-	var has bool
-	if com.IsExist(dbName) {
-		has = true
-	}
 
 	db, err = xorm.NewEngine("sqlite3", dbName)
 	if err != nil {
@@ -51,9 +46,6 @@ func SetDb() {
 		panic(err)
 	}
 
-	if !has {
-		tile38.GetBuildings()
-	}
 }
 
 func toInt(in []byte) int {

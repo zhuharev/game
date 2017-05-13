@@ -3,12 +3,13 @@ package tile38
 import (
 	"encoding/json"
 	"fmt"
+	"log"
+	"math"
+
 	"github.com/Unknwon/com"
 	"github.com/garyburd/redigo/redis"
 	"github.com/tidwall/tile38/controller"
 	"github.com/zhuharev/go-osm"
-	"log"
-	"math"
 )
 
 var (
@@ -69,7 +70,7 @@ func Nearby(lat, long float64) (map[int64][]float64, error) {
 		log.Fatalf("Could not connect: %v\n", err)
 	}
 	defer c.Close()
-	ret, err := c.Do("NEARBY", tileBuildingsTable, "POINT", fmt.Sprint(lat), fmt.Sprint(long), "200")
+	ret, err := c.Do("NEARBY", tileBuildingsTable, "POINT", fmt.Sprint(lat), fmt.Sprint(long), "250")
 	//ret, err := c.Do("GET", tileBuildingsTable, "78411860")
 	if err != nil {
 		panic(err)
@@ -111,7 +112,7 @@ func centerFromNodes(nodes []osm.Point) []float64 {
 	for _, v := range nodes {
 		points = append(points, []float64{v.Lat, v.Lng})
 	}
-	return center(points)
+	return Center(points)
 }
 
 //  возвращает длину отрезка с координатами (x1,y1)-(x2,y2)
@@ -119,7 +120,7 @@ func length(x1, y1, x2, y2 float64) float64 {
 	return math.Sqrt((x1-x2)*(x1-x2) + (y1-y2)*(y1-y2))
 }
 
-func center(points [][]float64) []float64 {
+func Center(points [][]float64) []float64 {
 	var (
 		xc float64
 		yc float64

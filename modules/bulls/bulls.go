@@ -25,6 +25,7 @@ func isValid(c byte) bool {
 	return bytes.IndexByte(alphabet, c) != -1
 }
 
+// BullsAndCows check guess for bulls and cows
 func BullsAndCows(target []byte, guess []byte) (int, int, error) {
 	var bulls, cows int
 
@@ -57,4 +58,28 @@ func BullsAndCows(target []byte, guess []byte) (int, int, error) {
 		}
 	}
 	return bulls, cows, nil
+}
+
+// Highlight return highlight of gues
+// 1 lvl - highlight bulls and cows
+// 2 lvl - highlight cows
+// 3 lvl - highlight bulls
+// >= 4 lvl - no highlight
+func Highlight(target []byte, guess []byte, armor int64) (res []int) {
+	res = make([]int, allowedLength)
+	for idx, c := range guess {
+		pos := bytes.IndexByte(target, c)
+		if pos == idx {
+			if armor <= 1 || armor == 3 {
+				res[idx] = 2
+			}
+		} else {
+			if pos >= 0 {
+				if armor <= 2 {
+					res[idx] = 1
+				}
+			}
+		}
+	}
+	return
 }

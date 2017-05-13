@@ -3,38 +3,31 @@ package lib
 import (
 	"fmt"
 	"log"
-	"net/http"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/mholt/binding"
 	"gopkg.in/macaron.v1"
 
 	"github.com/zhuharev/game/models"
+	"github.com/zhuharev/game/modules/fixdb"
 	"github.com/zhuharev/game/modules/middleware"
-	"github.com/zhuharev/game/modules/tile38"
+	"github.com/zhuharev/game/modules/nearbydb"
 )
 
-type Center struct {
-	LongLat string
-}
-
-func (c *Center) FieldMap(req *http.Request) binding.FieldMap {
-	return binding.FieldMap{
-		&c.LongLat: "center",
-	}
-}
-
+// Run starts web server
 func Run() {
-	go func() {
-		err := tile38.StartTileServer()
-		if err != nil {
-			panic(err)
-		}
-	}()
+	log.SetFlags(log.LstdFlags | log.Llongfile)
 
 	models.SetDb()
+	err := nearbydb.NewContext()
+	if err != nil {
+		log.Fatalln(err)
+	}
+	err = fixdb.NewContext()
+	if err != nil {
+		log.Fatalln(err)
+	}
 
 	time.Sleep(1 * time.Second)
 
@@ -48,7 +41,7 @@ func Run() {
 		}
 	}()
 
-	m := macaron.New()
+	m := macaron.Classic()
 	m.Use(macaron.Renderer(macaron.RenderOptions{
 		IndentJSON: true,
 	}))
@@ -56,6 +49,7 @@ func Run() {
 
 	m.Group("/api/v1", func() {
 		m.Get("/buildings", handleBuildings)
+		m.Get("/buildings/:id", Building)
 		m.Get("/user", me)
 		m.Get("/users", handleUsers)
 		m.Get("/auth", handleAuth)

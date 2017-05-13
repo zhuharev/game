@@ -2,6 +2,7 @@ package lib
 
 import (
 	"fmt"
+	"net/http"
 	"strconv"
 	"strings"
 
@@ -20,8 +21,8 @@ func handleNewGame(ctx *middleware.Context) {
 		handleError(ctx, err)
 		return
 	}
-	buildingId := com.StrTo(ctx.Query("building_id")).MustInt64()
-	game, err := models.NewGame(user.Id, buildingId)
+	buildingID := ctx.QueryInt64("building_id")
+	game, err := models.NewGame(user.Id, buildingID, ctx.QueryInt64("brick_number"))
 	if err != nil {
 		handleError(ctx, err)
 		return
@@ -36,15 +37,16 @@ func handleCheck(ctx *middleware.Context) {
 		return
 	}
 	answer := com.StrTo(ctx.Query("answer")).MustInt()
-	bulls, cows, err := models.Check(user, com.StrTo(ctx.Query("game_id")).MustInt64(), answer)
+	bulls, cows, highlights, err := models.Check(user, com.StrTo(ctx.Query("game_id")).MustInt64(), answer)
 	if err != nil {
 		handleError(ctx, err)
 		return
 	}
 	ctx.JSON(200, map[string]interface{}{
-		"answer": answer,
-		"bulls":  bulls,
-		"cows":   cows,
+		"answer":     answer,
+		"bulls":      bulls,
+		"cows":       cows,
+		"highlights": highlights,
 	})
 }
 
@@ -56,31 +58,55 @@ func handleError(ctx *middleware.Context, err error) {
 	}
 }
 
+type center struct {
+	LongLat string
+	lon     float64
+	lat     float64
+	parsed  bool
+}
+
+func (c *center) FieldMap(req *http.Request) binding.FieldMap {
+	return binding.FieldMap{
+		&c.LongLat: "center",
+	}
+}
+
+func (c *center) parse() {
+	if c.parsed {
+		return
+	}
+	defer func() { c.parsed = true }()
+
+	arr := strings.Split(c.LongLat, ",")
+	if len(arr) != 2 {
+		fmt.Println("Not 2")
+		return
+	}
+
+	c.lat, _ = strconv.ParseFloat(arr[0], 64)
+	c.lon, _ = strconv.ParseFloat(arr[1], 64)
+}
+
+func (c *center) Lat() float64 {
+	c.parse()
+	return c.lat
+}
+
+func (c *center) Lon() float64 {
+	c.parse()
+	return c.lon
+}
+
 func handleBuildings(ctx *middleware.Context) {
 
-	cntr := new(Center)
+	cntr := new(center)
 
 	errs := binding.Bind(ctx.Context.Req.Request, cntr)
 	if errs.Has("") {
 		fmt.Println(errs)
 	}
 
-	arr := strings.Split(cntr.LongLat, ",")
-	if len(arr) != 2 {
-		fmt.Println("Not 2")
-	}
-
-	lat, err := strconv.ParseFloat(arr[0], 64)
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	lon, err := strconv.ParseFloat(arr[1], 64)
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	buildings, err := models.Nearby(lat, lon)
+	buildings, err := models.Nearby(cntr.Lat(), cntr.Lon())
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -89,9 +115,17 @@ func handleBuildings(ctx *middleware.Context) {
 	for _, b := range buildings {
 		ids = append(ids, b.Id)
 	}
-	buildings, err = models.FindBuildings(ids)
+	buildingsFromDb, err := models.FindBuildings(ids)
 	if err != nil {
 		fmt.Println(err)
+	}
+	// show buildins if it not exsist in sql
+	for i, b := range buildings {
+		for _, bFromDb := range buildingsFromDb {
+			if bFromDb.Id == b.Id {
+				buildings[i] = bFromDb
+			}
+		}
 	}
 
 	var ownerIds []int64
@@ -141,7 +175,7 @@ func handleAuth(c *middleware.Context) {
 	}
 
 	c.JSON(200, struct {
-		Id    int64  `json:"id"`
+		ID    int64  `json:"id"`
 		Token string `json:"token"`
 	}{
 		u.Id,

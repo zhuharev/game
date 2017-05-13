@@ -2,9 +2,11 @@ package models
 
 import (
 	"fmt"
+	"log"
 	"time"
 
 	bac "github.com/zhuharev/game/modules/bulls"
+	"github.com/zhuharev/game/modules/fixdb"
 )
 
 const (
@@ -12,7 +14,8 @@ const (
 )
 
 type Game struct {
-	Id int64 `json:"id"`
+	Id      int64 `json:"id"`
+	BrickID int64 `json:"brick_id"`
 
 	Secret int `json:"-"`
 
@@ -26,14 +29,35 @@ type Game struct {
 	Created time.Time `xorm:"created" json:"-"`
 }
 
-func NewGame(userId, buildingId int64) (*Game, error) {
-	user, err := UserGet(userId)
+// NewGame create game.
+// If building not exists in sql database, it try find in fixdb.
+func NewGame(userID, buildingID, brickID int64) (*Game, error) {
+	user, err := UserGet(userID)
 	if err != nil {
 		return nil, err
 	}
-	building, err := getBuilding(buildingId)
+	building, err := BuildingGet(buildingID)
 	if err != nil {
-		return nil, err
+		if err != ErrNotFound {
+			return nil, err
+		}
+		var coords []float64
+		coords, err = fixdb.Get(buildingID)
+		if err != nil {
+			return nil, err
+		}
+		if coords != nil {
+			building = &Building{
+				Id:     buildingID,
+				Lat:    coords[0],
+				Long:   coords[1],
+				Profit: 1,
+			}
+			err = createBuilding(building)
+			if err != nil {
+				return nil, err
+			}
+		}
 	}
 
 	if building.OwnerId == user.Id {
@@ -51,8 +75,9 @@ func NewGame(userId, buildingId int64) (*Game, error) {
 
 	game := &Game{
 		UserId:     user.Id,
-		BuildingId: buildingId,
+		BuildingId: buildingID,
 		Secret:     toInt(genNumber()),
+		BrickID:    brickID,
 	}
 
 	_, err = db.Insert(game)
@@ -75,13 +100,14 @@ func getGame(id int64) (*Game, error) {
 	return game, nil
 }
 
-func Check(u *User, gameId int64, answer int) (bulls int, cows int, err error) {
+func Check(u *User, gameId int64, answer int) (bulls int, cows int, highlight []int, err error) {
 	game, err := getGame(gameId)
 	if err != nil {
 		return
 	}
 	if game.UserId != u.Id {
-		return 0, 0, fmt.Errorf("Forbiten")
+		err = fmt.Errorf("Forbiten")
+		return
 	}
 
 	bulls, cows, err = bac.BullsAndCows(toByte(game.Secret), toByte(answer))
@@ -89,12 +115,14 @@ func Check(u *User, gameId int64, answer int) (bulls int, cows int, err error) {
 		return
 	}
 
-	build, err := getBuilding(game.BuildingId)
+	build, err := BuildingGet(game.BuildingId)
 	if err != nil {
 		return
 	}
 
-	fmt.Printf("Check game(%d): answer=%d (b:%d, c:%d)\n", game.Secret, answer, bulls, cows)
+	highlight = bac.Highlight(toByte(game.Secret), toByte(answer), build.Armor)
+
+	fmt.Printf("Check game(%d): answer=%d (b:%d, c:%d), hilights: %v\n", game.Secret, answer, bulls, cows, highlight)
 
 	// win
 	if bulls == 4 {
@@ -103,16 +131,36 @@ func Check(u *User, gameId int64, answer int) (bulls int, cows int, err error) {
 		if err != nil {
 			return
 		}
-		_, err = db.Exec("update user set profit = profit - ? where id = (select owner_id from building where id = ?)", build.Profit, build.Id)
-		if err != nil {
+
+		_, err = buildGetFromSQL(build.Id)
+		if err != nil && err != ErrNotFound {
+			log.Println(err)
 			return
+		} else if err == ErrNotFound {
+			// создаем здание в sql
+			err = createBuilding(build)
+			if err != nil {
+				log.Println(err)
+				return
+			}
+		}
+		if build.OwnerId != 0 {
+			// уменьшаем прибыль предыдущего владельца
+			_, err = db.Exec("update user set profit = profit - ? where id = (select owner_id from building where id = ?)", build.Profit, build.Id)
+			if err != nil {
+				log.Println(err)
+				return
+			}
 		}
 		_, err = db.Exec("update building set owner_id = ? where id = ?", u.Id, game.BuildingId)
 		if err != nil {
+			log.Println(err)
 			return
 		}
+		// увеличиваем прибыль нового владельца
 		_, err = db.Exec("update user set profit = profit + ? where id = ?", build.Profit, u.Id)
 		if err != nil {
+			log.Println(err)
 			return
 		}
 	}
