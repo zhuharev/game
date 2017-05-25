@@ -127,3 +127,9 @@ func makeBuildingsFromMap(in map[int64][]float64) []Building {
 	}
 	return res
 }
+
+// BuildingWithOwnerCount returns total building with owners
+func BuildingWithOwnerCount() (int64, error) {
+	b := new(Building)
+	return db.Where("owner_id != 0").Count(b)
+}

@@ -192,3 +192,8 @@ func UsersSetFCMToken(userID int64, token string) error {
 	_, err := db.Cols("fcm_token").Id(u.Id).Update(u)
 	return err
 }
+
+// UsersCount returns all user count
+func UsersCount() (int64, error) {
+	return db.Count(new(User))
+}

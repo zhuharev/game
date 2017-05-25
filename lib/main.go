@@ -17,6 +17,7 @@ import (
 	"github.com/zhuharev/game/modules/middleware"
 	"github.com/zhuharev/game/modules/nearbydb"
 	"github.com/zhuharev/game/modules/setting"
+	"github.com/zhuharev/game/modules/tgbot"
 )
 
 // Run starts web server
@@ -49,6 +50,11 @@ func Run() {
 	if err != nil {
 		log.Fatalln(err)
 	}
+	err = tgbot.NewContext(tgHandler)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
 
 	time.Sleep(1 * time.Second)
 
