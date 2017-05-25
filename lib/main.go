@@ -12,6 +12,7 @@ import (
 	"gopkg.in/macaron.v1"
 
 	"github.com/zhuharev/game/models"
+	"github.com/zhuharev/game/modules/bloblog"
 	"github.com/zhuharev/game/modules/fixdb"
 	"github.com/zhuharev/game/modules/middleware"
 	"github.com/zhuharev/game/modules/nearbydb"
@@ -37,6 +38,10 @@ func Run() {
 		log.Fatalln(err)
 	}
 	err = fixdb.NewContext()
+	if err != nil {
+		log.Fatalln(err)
+	}
+	err = bloblog.NewContext()
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -106,12 +111,15 @@ func Run() {
 			}
 			ctx.JSON(200, "ok")
 		})
+		m.Post("/user/avatar", handleUpload)
 		m.Get("/user/fcm", handleFCMToken)
 	})
 
 	m.Get("/", func(ctx *middleware.Context) {
 		ctx.JSON(200, map[string]interface{}{"name": "iris"})
 	})
+
+	m.Get("/images/:id", handleAvatar)
 
 	m.Run(7000)
 }

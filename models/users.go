@@ -15,9 +15,10 @@ type User struct {
 	Lon float64 `json:"lon,omitempty"`
 	Lat float64 `json:"lat,omitempty"`
 
-	Username string `json:"username,omitempty"`
-	FullName string `json:"full_name,omitempty"`
-	Sex      int    `json:"sex,omitempty"`
+	Username  string `json:"username,omitempty"`
+	FullName  string `json:"full_name,omitempty"`
+	Sex       int    `json:"sex,omitempty"`
+	AvatarURL string `json:"avatar_url" xorm:"avatar_url"`
 
 	Balance Balance `json:"balance,omitempty"`
 	Profit  int64   `json:"profit,omitempty"`
@@ -172,6 +173,15 @@ func SetLocation(userId int64, lat, lon float64) error {
 		return err
 	}
 	return nil
+}
+
+func UsersSetAvatarUrl(userID int64, uri string) error {
+	u := &User{
+		Id:        userID,
+		AvatarURL: uri,
+	}
+	_, err := db.Cols("avatar_url").Id(u.Id).Update(u)
+	return err
 }
 
 func UsersSetFCMToken(userID int64, token string) error {
