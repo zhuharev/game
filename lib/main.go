@@ -15,6 +15,7 @@ import (
 	"github.com/zhuharev/game/modules/fixdb"
 	"github.com/zhuharev/game/modules/middleware"
 	"github.com/zhuharev/game/modules/nearbydb"
+	"github.com/zhuharev/game/modules/setting"
 )
 
 // Run starts web server
@@ -36,6 +37,10 @@ func Run() {
 		log.Fatalln(err)
 	}
 	err = fixdb.NewContext()
+	if err != nil {
+		log.Fatalln(err)
+	}
+	err = setting.NewContext()
 	if err != nil {
 		log.Fatalln(err)
 	}
