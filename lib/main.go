@@ -3,6 +3,8 @@ package lib
 import (
 	"fmt"
 	"log"
+	"os"
+	"os/signal"
 	"strconv"
 	"strings"
 	"time"
@@ -17,6 +19,15 @@ import (
 
 // Run starts web server
 func Run() {
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt)
+	go func() {
+		for _ = range c {
+			// sig is a ^C, handle it
+			os.Exit(0)
+		}
+	}()
+
 	log.SetFlags(log.LstdFlags | log.Llongfile)
 
 	models.SetDb()
