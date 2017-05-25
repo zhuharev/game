@@ -23,7 +23,8 @@ type User struct {
 	Profit  int64   `json:"profit,omitempty"`
 	Goods   Goods   `xorm:"-" json:"goods,omitempty"`
 
-	Token string `json:"token,omitempty"`
+	Token    string `json:"token,omitempty"`
+	FCMToken string `json:"fcm_token,omitempty" xorm:"fcm_token"`
 
 	Created time.Time `xorm:"created" json:"created,omitempty"`
 	Updated time.Time `xorm:"updated" json:"-"`
@@ -159,4 +160,13 @@ func SetLocation(userId int64, lat, lon float64) error {
 		return err
 	}
 	return nil
+}
+
+func UsersSetFCMToken(userID int64, token string) error {
+	u := &User{
+		Id:       userID,
+		FCMToken: token,
+	}
+	_, err := db.Cols("fcm_token").Id(u.Id).Update(u)
+	return err
 }

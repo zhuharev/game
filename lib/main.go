@@ -89,6 +89,7 @@ func Run() {
 			}
 			ctx.JSON(200, "ok")
 		})
+		m.Get("/user/fcm", handleFCMToken)
 	})
 
 	m.Get("/", func(ctx *middleware.Context) {
