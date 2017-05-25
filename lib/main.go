@@ -78,8 +78,12 @@ func Run() {
 		m.Get("/buildings", handleBuildings)
 		m.Get("/buildings/:id", Building)
 		m.Get("/user", me)
+		m.Group("/users", func() {
+			m.Get("/:id", handleUser)
+			m.Get("/:id/sex", handleUserSex)
+		})
 		m.Get("/users", handleUsers)
-		m.Get("/users/:id", handleUser)
+
 		m.Get("/auth", handleAuth)
 		m.Get("/games/new", handleNewGame)
 		m.Get("/games/check", handleCheck)

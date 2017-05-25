@@ -74,3 +74,27 @@ func handleUser(c *middleware.Context) {
 	c.JSON(200, user)
 	return
 }
+
+func handleUserSex(c *middleware.Context) {
+
+	u, err := models.GetUserByToken(c.Query("token"))
+	if err != nil {
+		c.JSON(200, err.Error())
+		return
+	}
+	if u == nil {
+		c.JSON(200, "Ошибка авторизации")
+		return
+	}
+
+	var (
+		sex = c.QueryInt("sex")
+	)
+
+	err = models.UsersSetSex(u.Id, sex)
+	if err != nil {
+		handleError(c, err)
+		return
+	}
+	c.JSON(200, "ok")
+}

@@ -193,6 +193,15 @@ func UsersSetFCMToken(userID int64, token string) error {
 	return err
 }
 
+func UsersSetSex(userID int64, sex int) error {
+	u := &User{
+		Id:       userID,
+		Sex: sex,
+	}
+	_, err := db.Cols("sex").Id(u.Id).Update(u)
+	return err
+}
+
 // UsersCount returns all user count
 func UsersCount() (int64, error) {
 	return db.Count(new(User))
