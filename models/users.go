@@ -101,8 +101,20 @@ type UserStore interface {
 
 // UserGet get return user by id
 func UserGet(id int64) (*User, error) {
+	return userGet(id, true)
+}
+
+func UserGetPublicInfo(id int64) (*User, error) {
+	return userGet(id, false)
+}
+
+func userGet(id int64, withPrivate bool) (*User, error) {
 	var u = new(User)
-	if has, err := db.Id(id).Get(u); has {
+	sess := db.Id(id)
+	if !withPrivate {
+		sess.Cols("id", "full_name", "avatar_url")
+	}
+	if has, err := sess.Get(u); has {
 		return u, nil
 	} else if err != nil {
 		return nil, err

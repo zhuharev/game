@@ -51,3 +51,26 @@ func handleUsers(c *middleware.Context) {
 		"users": users,
 	})
 }
+
+func handleUser(c *middleware.Context) {
+	user, err := models.UserGetPublicInfo(c.ParamsInt64(":id"))
+	if err != nil {
+		c.JSON(200, map[string]interface{}{
+			"error": err.Error(),
+		})
+		return
+	}
+	if c.QueryBool("extend") {
+		blds, err := models.GetUserBuildings(user.Id)
+		if err != nil {
+			c.JSON(200, map[string]interface{}{
+				"error": err.Error(),
+			})
+			return
+		}
+		user.Goods.Buildings = blds
+		user.Goods.Count = len(blds)
+	}
+	c.JSON(200, user)
+	return
+}
