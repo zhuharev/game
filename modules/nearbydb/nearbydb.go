@@ -75,15 +75,20 @@ func iterReader(r io.Reader, cb func(p *point) error) error {
 	br := r
 	for {
 		var (
-			id  int64
-			lat float64
-			lon float64
+			id     int64
+			weight int64
+			lat    float64
+			lon    float64
 		)
 		err := binary.Read(br, binary.BigEndian, &id)
 		if err != nil {
 			if err == io.EOF {
 				break
 			}
+			return err
+		}
+		err = binary.Read(br, binary.BigEndian, &weight)
+		if err != nil {
 			return err
 		}
 		err = binary.Read(br, binary.BigEndian, &lat)
@@ -95,7 +100,7 @@ func iterReader(r io.Reader, cb func(p *point) error) error {
 			return err
 		}
 
-		p := newPoint(id, lat, lon)
+		p := newPoint(id, weight, lat, lon)
 		if cb != nil {
 			err = cb(p)
 			if err != nil {
@@ -107,17 +112,22 @@ func iterReader(r io.Reader, cb func(p *point) error) error {
 	return nil
 }
 
-func newPoint(id int64, lat, lon float64) *point {
+func newPoint(id int64, weight int64, lat, lon float64) *point {
 	return &point{id: id, Coordinates: []float64{lat, lon}}
 }
 
 type point struct {
 	id          int64
+	weight      int64
 	Coordinates []float64 `json:"coordinates"`
 }
 
 func (p point) ID() string {
 	return fmt.Sprint(p.id)
+}
+
+func (p point) Weight() int64 {
+	return p.weight
 }
 
 func (p point) Lat() float64 {
@@ -141,16 +151,19 @@ func (p point) WriteTo(w io.Writer) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-
-	err = binary.Write(w, binary.BigEndian, p.Coordinates[0])
+	err = binary.Write(w, binary.BigEndian, p.weight)
 	if err != nil {
 		return 8, err
 	}
-	err = binary.Write(w, binary.BigEndian, p.Coordinates[1])
+	err = binary.Write(w, binary.BigEndian, p.Coordinates[0])
 	if err != nil {
 		return 16, err
 	}
-	return 24, nil
+	err = binary.Write(w, binary.BigEndian, p.Coordinates[1])
+	if err != nil {
+		return 24, err
+	}
+	return 32, nil
 }
 
 type points []point

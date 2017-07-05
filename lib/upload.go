@@ -9,6 +9,7 @@ import (
 	"github.com/zhuharev/game/models"
 	"github.com/zhuharev/game/modules/bloblog"
 	"github.com/zhuharev/game/modules/middleware"
+	"github.com/zhuharev/game/modules/setting"
 )
 
 var (
@@ -20,10 +21,12 @@ func handleUpload(c *middleware.Context) {
 
 	u, err := models.GetUserByToken(c.Query("token"))
 	if err != nil {
+		log.Println(err.Error())
 		c.JSON(200, err.Error())
 		return
 	}
 	if u == nil {
+		log.Println("Ошибка авторизации")
 		c.JSON(200, "Ошибка авторизации")
 		return
 	}
@@ -31,29 +34,30 @@ func handleUpload(c *middleware.Context) {
 	c.Req.Request.Body = http.MaxBytesReader(c.Resp, c.Req.Request.Body, 10*1024*1024)
 
 	c.Req.ParseMultipartForm(10 * 1024 * 1024)
-	file, _, e := c.Req.FormFile("file")
-	if e != nil {
-		fmt.Println(e)
+	file, _, err := c.Req.FormFile("file")
+	if err != nil {
+		log.Println(err.Error())
 		return
 	}
 	defer file.Close()
 
-	bts, e := ioutil.ReadAll(file)
-	if e != nil {
+	bts, err := ioutil.ReadAll(file)
+	if err != nil {
+		log.Println(err.Error())
 		c.JSON(200, err.Error())
-		fmt.Println(e)
 		return
 	}
 
 	id, err := bloblog.Save(bts)
-	if e != nil {
+	if err != nil {
+		log.Println(err.Error())
 		c.JSON(200, err.Error())
-		fmt.Println(e)
 		return
 	}
 
-	err = models.UsersSetAvatarUrl(u.Id, fmt.Sprintf("/images/%d", id))
+	err = models.UsersSetAvatarUrl(u.Id, fmt.Sprintf("https://%s/images/%d", setting.App.App.Host, id))
 	if err != nil {
+		log.Println(err.Error())
 		c.JSON(200, err.Error())
 		return
 	}

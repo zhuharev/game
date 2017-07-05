@@ -27,6 +27,8 @@ type User struct {
 	Token    string `json:"token,omitempty"`
 	FCMToken string `json:"fcm_token,omitempty" xorm:"fcm_token"`
 
+	DeviceID string `json:"device_id" xorm:"device_id"`
+
 	Created time.Time `xorm:"created" json:"created,omitempty"`
 	Updated time.Time `xorm:"updated" json:"-"`
 	Deleted time.Time `xorm:"deleted" json:"-"`
@@ -43,6 +45,7 @@ type AuthForm struct {
 
 	FirstName string
 	LastName  string
+	AvatarURL string
 }
 
 // AuthUser create or return existing user
@@ -62,6 +65,7 @@ func AuthUser(af AuthForm) (*User, error) {
 		u.Token = t.Token
 		name := fmt.Sprintf("%s %s", af.FirstName, af.LastName)
 		u.FullName = name
+		// TODO remove this
 		_, err = db.Id(u.Id).Update(u)
 		if err != nil {
 			return nil, err
@@ -76,9 +80,10 @@ func AuthUser(af AuthForm) (*User, error) {
 
 func createUser(af AuthForm) (*User, error) {
 	u := &User{
-		VkId:     af.VkId,
-		VkToken:  af.VkToken,
-		FullName: fmt.Sprintf("%s %s", af.FirstName, af.LastName),
+		VkId:      af.VkId,
+		VkToken:   af.VkToken,
+		FullName:  fmt.Sprintf("%s %s", af.FirstName, af.LastName),
+		AvatarURL: af.AvatarURL,
 	}
 	_, err := db.Insert(u)
 	if err != nil {
@@ -113,7 +118,7 @@ func userGet(id int64, withPrivate bool) (*User, error) {
 	var u = new(User)
 	sess := db.Id(id)
 	if !withPrivate {
-		sess.Cols("id", "full_name", "avatar_url")
+		sess.Cols("id", "full_name", "avatar_url", "sex")
 	}
 	if has, err := sess.Get(u); has {
 		return u, nil
@@ -126,7 +131,7 @@ func userGet(id int64, withPrivate bool) (*User, error) {
 
 // UserFindByIds returns users by his ids
 func UserFindByIds(ids []int64, offsetLimit ...int) (users []User, err error) {
-	err = db.Cols("id", "full_name").In("id", ids).Find(&users)
+	err = db.Cols("id", "full_name", "avatar_url", "sex").In("id", ids).Find(&users)
 	if err != nil {
 		return nil, err
 	}
@@ -159,6 +164,10 @@ func GetUserBuildings(useId int64) ([]Building, error) {
 	return bs, err
 }
 
+func GetUserBuildingCount(useId int64) (int64, error) {
+	return db.Where("owner_id = ?", useId).Count(new(Building))
+}
+
 func GetUserFromCtx(ctx *middleware.Context) (*User, error) {
 	token := ctx.Query("token")
 	if token == "" {
@@ -185,20 +194,30 @@ func UsersSetAvatarUrl(userID int64, uri string) error {
 }
 
 func UsersSetFCMToken(userID int64, token string) error {
+	_, err := db.Exec("update user set fcm_token = '' where fcm_token = ?", token)
+	if err != nil {
+		return err
+	}
 	u := &User{
 		Id:       userID,
 		FCMToken: token,
 	}
-	_, err := db.Cols("fcm_token").Id(u.Id).Update(u)
+	_, err = db.Cols("fcm_token").Id(u.Id).Update(u)
 	return err
 }
 
 func UsersSetSex(userID int64, sex int) error {
 	u := &User{
-		Id:       userID,
+		Id:  userID,
 		Sex: sex,
 	}
 	_, err := db.Cols("sex").Id(u.Id).Update(u)
+	return err
+}
+
+// UserUpdateField update specific user's field
+func UserUpdateField(u *User, fieldName string) error {
+	_, err := db.Cols(fieldName).Id(u.Id).Update(u)
 	return err
 }
 

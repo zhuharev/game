@@ -11,6 +11,14 @@ func (b *Balance) MarshalJSON() ([]byte, error) {
 	return json.Marshal(whole)
 }
 
+func (b Balance) Real() int64 {
+	return int64(int64(b) / 100)
+}
+
+func (b Balance) Add(sum int64) Balance {
+	return b + Balance(sum*100)
+}
+
 func Inc(b Balance, delta int64) Balance {
 	balance := int64(b)
 	//var s int64 = balance / 100
@@ -25,7 +33,13 @@ func Inc(b Balance, delta int64) Balance {
 }
 
 func IncreaseBalance() error {
-	_, err := db.Exec("update user set balance = ((balance/100)+((balance%100)+profit)/60)*100 + ((balance%100)+profit)%60")
+	_, err := db.Exec("update user set balance = balance + (profit*100*15/1440)")
+	//db.Iterate(bean, fun)
+	return err
+}
+
+func DecreaseBalance(userID, sum int64) error {
+	_, err := db.Exec("update user set balance = balance - ? where id = ?", sum*100, userID)
 	//db.Iterate(bean, fun)
 	return err
 }

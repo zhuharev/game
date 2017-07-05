@@ -33,11 +33,11 @@ func Run() {
 
 	log.SetFlags(log.LstdFlags | log.Llongfile)
 
-	models.SetDb()
-	err := nearbydb.NewContext()
+	err := setting.NewContext()
 	if err != nil {
 		log.Fatalln(err)
 	}
+
 	err = fixdb.NewContext()
 	if err != nil {
 		log.Fatalln(err)
@@ -46,20 +46,24 @@ func Run() {
 	if err != nil {
 		log.Fatalln(err)
 	}
-	err = setting.NewContext()
+
+	models.SetDb()
+	err = nearbydb.NewContext()
 	if err != nil {
 		log.Fatalln(err)
 	}
+
 	err = tgbot.NewContext(tgHandler)
 	if err != nil {
 		log.Fatalln(err)
 	}
 
+	log.Println(setting.App.Fcm.Key)
 
 	time.Sleep(1 * time.Second)
 
 	go func() {
-		tick := time.NewTicker(1 * time.Minute)
+		tick := time.NewTicker(15 * time.Minute)
 		for range tick.C {
 			err := models.IncreaseBalance()
 			if err != nil {
@@ -69,18 +73,26 @@ func Run() {
 	}()
 
 	m := macaron.Classic()
+	m.Use(macaron.Static("static"))
 	m.Use(macaron.Renderer(macaron.RenderOptions{
 		IndentJSON: true,
 	}))
 	m.Use(middleware.Contexter())
 
 	m.Group("/api/v1", func() {
+		m.Get("/prices", handlePrices)
 		m.Get("/buildings", handleBuildings)
 		m.Get("/buildings/:id", Building)
+		m.Get("/buildings/:id/upgrade", handleUpgrade)
+		m.Get("/buildings/:id/downgrade", handleDowngrade)
+		m.Get("/buildings/:id/block", handleBlock)
+		m.Get("/buildings/:id/notify", handleNotify)
+		m.Get("/buildings/:id/pin", handlePin)
 		m.Get("/user", me)
 		m.Group("/users", func() {
 			m.Get("/:id", handleUser)
 			m.Get("/:id/sex", handleUserSex)
+			m.Get("/:id/vk_avatar", handleVkAvar)
 		})
 		m.Get("/users", handleUsers)
 
@@ -126,7 +138,7 @@ func Run() {
 	})
 
 	m.Get("/", func(ctx *middleware.Context) {
-		ctx.JSON(200, map[string]interface{}{"name": "iris"})
+		ctx.JSON(200, map[string]interface{}{"name": "Juctvalk"})
 	})
 
 	m.Get("/images/:id", handleAvatar)

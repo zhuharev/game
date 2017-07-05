@@ -16,11 +16,11 @@ import (
 )
 
 func tgHandler(msg *tgbotapi.Message) error {
-	log.Println("Handle message", msg.Command(), msg.CommandArguments())
+	log.Println("Handle message", msg.Chat.ID, msg.Command(), msg.CommandArguments())
 	switch msg.Command() {
 	case "send":
 		args := strings.Split(msg.CommandArguments(), " ")
-		if len(args) != 2 {
+		if len(args) < 2 {
 			break
 		}
 		user, err := models.UserGet(com.StrTo(args[0]).MustInt64())
@@ -29,7 +29,7 @@ func tgHandler(msg *tgbotapi.Message) error {
 			break
 		}
 		if user.FCMToken != "" {
-			err = fcm.Send(user.FCMToken, args[1])
+			err = fcm.Send(user.FCMToken, map[string]string{"text": strings.Join(args[1:], " "), "type": "test"})
 			if err != nil {
 				log.Println(err)
 			}
@@ -53,7 +53,40 @@ func tgHandler(msg *tgbotapi.Message) error {
 		if err != nil {
 			log.Println(err)
 		}
-
+	case "price":
+		if arr := strings.Split(msg.CommandArguments(), " "); len(arr) == 2 {
+			err := updatePrice(arr[0], com.StrTo(arr[1]).MustInt64())
+			if err != nil {
+				err = tgbot.Send(msg.Chat.ID, fmt.Sprintf("Ошибка: %s", err))
+				if err != nil {
+					log.Println(err)
+				}
+				break
+			}
+			pr, err := models.GetPrices()
+			if err != nil {
+				log.Println(err)
+				break
+			}
+			err = tgbot.Send(msg.Chat.ID, fmt.Sprintf("Цены обновлены, новые цены:\n%s", pr))
+			if err != nil {
+				log.Println(err)
+			}
+		}
+	case "prices":
+		pr, err := models.GetPrices()
+		if err != nil {
+			log.Println(err)
+			break
+		}
+		err = tgbot.Send(msg.Chat.ID, fmt.Sprintf("Цены:\n%s", pr))
+		if err != nil {
+			log.Println(err)
+		}
 	}
 	return nil
+}
+
+func updatePrice(name string, value int64) error {
+	return models.SetPrice(name, value)
 }

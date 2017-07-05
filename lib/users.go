@@ -5,6 +5,7 @@ import (
 
 	"github.com/zhuharev/game/models"
 	"github.com/zhuharev/game/modules/middleware"
+	"github.com/zhuharev/game/modules/vk"
 )
 
 func handleUsers(c *middleware.Context) {
@@ -70,6 +71,13 @@ func handleUser(c *middleware.Context) {
 		}
 		user.Goods.Buildings = blds
 		user.Goods.Count = len(blds)
+	} else {
+		cnt, err := models.GetUserBuildingCount(user.Id)
+		if err != nil {
+			handleError(c, err)
+			return
+		}
+		user.Goods.Count = int(cnt)
 	}
 	c.JSON(200, user)
 	return
@@ -97,4 +105,32 @@ func handleUserSex(c *middleware.Context) {
 		return
 	}
 	c.JSON(200, "ok")
+}
+
+func handleVkAvar(c *middleware.Context) {
+	u, err := models.UserGet(c.ParamsInt64(":id"))
+	if err != nil {
+		c.JSON(200, err.Error())
+		return
+	}
+	if u == nil {
+		c.JSON(200, "Ошибка авторизации")
+		return
+	}
+
+	url, err := vk.GetAvatarURL(u.VkToken)
+	if err != nil {
+		handleError(c, err)
+		return
+	}
+
+	u.AvatarURL = url
+
+	err = models.UserUpdateField(u, "avatar_url")
+	if err != nil {
+		handleError(c, err)
+		return
+	}
+
+	c.JSON(200, url)
 }

@@ -14,6 +14,8 @@ import (
 var (
 	db          *xorm.Engine
 	ErrNotFound = errors.New("not found")
+
+	debug = false
 )
 
 const (
@@ -29,7 +31,7 @@ func SetDb() {
 	if err != nil {
 		panic(err)
 	}
-	db.ShowSQL(false)
+	db.ShowSQL(debug)
 
 	err = Migrate(db)
 	if err != nil {
@@ -41,6 +43,7 @@ func SetDb() {
 		new(Token),
 		new(Building),
 		new(Game),
+		new(Kv),
 	)
 	if err != nil {
 		panic(err)

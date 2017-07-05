@@ -2,6 +2,7 @@ package lib
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -22,11 +23,12 @@ func handleNewGame(ctx *middleware.Context) {
 		return
 	}
 	buildingID := ctx.QueryInt64("building_id")
-	game, err := models.NewGame(user.Id, buildingID, ctx.QueryInt64("brick_number"))
+	game, err := models.NewGame(user.Id, buildingID, ctx.QueryInt64("brick_id"))
 	if err != nil {
 		handleError(ctx, err)
 		return
 	}
+
 	ctx.JSON(200, game)
 }
 
@@ -37,17 +39,24 @@ func handleCheck(ctx *middleware.Context) {
 		return
 	}
 	answer := com.StrTo(ctx.Query("answer")).MustInt()
-	bulls, cows, highlights, err := models.Check(user, com.StrTo(ctx.Query("game_id")).MustInt64(), answer)
+	bulls, cows, highlights, nextGameID, message, armor, err := models.Check(user, ctx.QueryInt64("game_id"), answer, ctx.QueryInt("step"))
 	if err != nil {
 		handleError(ctx, err)
 		return
 	}
-	ctx.JSON(200, map[string]interface{}{
+	res := map[string]interface{}{
 		"answer":     answer,
 		"bulls":      bulls,
 		"cows":       cows,
 		"highlights": highlights,
-	})
+		"next_game":  nextGameID,
+		"armor":      armor,
+	}
+	if message != "" {
+		res["message"] = message
+	}
+	log.Println("[RES]", res)
+	ctx.JSON(200, res)
 }
 
 func handleError(ctx *middleware.Context, err error) {
@@ -166,6 +175,7 @@ func handleAuth(c *middleware.Context) {
 	aform.VkId = int64(user.Id)
 	aform.FirstName = user.FirstName
 	aform.LastName = user.LastName
+	aform.AvatarURL = user.Photo200
 
 	u, err := models.AuthUser(aform)
 	if err != nil {

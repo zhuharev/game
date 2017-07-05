@@ -12,7 +12,7 @@ func TestInc(t *testing.T) {
 		b = Inc(b, 1)
 	}
 
-	if b != 120 {
+	if b != 10201 {
 		t.Errorf("b != 120, got %d", b)
 	}
 }

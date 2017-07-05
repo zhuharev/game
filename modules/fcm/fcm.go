@@ -1,25 +1,26 @@
 package fcm
 
 import (
+	"log"
+
 	"gopkg.in/maddevsio/fcm.v1"
 
 	"github.com/zhuharev/game/modules/setting"
 )
 
-func Send(target, text string) error {
-	data := map[string]string{
-		"text": text,
-	}
+func Send(target string, data map[string]string) error {
+	log.Println("[FCM] send message ", data)
 	c := fcm.NewFCM(setting.App.Fcm.Key)
+
 	_, err := c.Send(&fcm.Message{
 		Data:             data,
 		RegistrationIDs:  []string{target},
 		ContentAvailable: true,
 		Priority:         fcm.PriorityHigh,
-		Notification: &fcm.Notification{
-			Title: "Juctvalk notify",
-			Body:  text,
-		},
+		//Notification: &fcm.Notification{
+		//Title: "Juctvalk notify",
+		//	Body:  text,
+		//},
 	})
 	if err != nil {
 		return err
