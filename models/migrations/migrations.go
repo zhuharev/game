@@ -121,7 +121,7 @@ In case you're stilling getting this notice, go through instructions again until
 }
 
 func sessionRelease(sess *xorm.Session) {
-	if !sess.IsCommitedOrRollbacked {
+	if !sess.IsClosed() {
 		sess.Rollback()
 	}
 	sess.Close()

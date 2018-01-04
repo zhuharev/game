@@ -110,9 +110,9 @@ func handleBuildings(ctx *middleware.Context) {
 
 	cntr := new(center)
 
-	errs := binding.Bind(ctx.Context.Req.Request, cntr)
-	if errs.Has("") {
-		fmt.Println(errs)
+	err := binding.Bind(ctx.Context.Req.Request, cntr)
+	if err != nil {
+		fmt.Println(err)
 	}
 
 	buildings, err := models.Nearby(cntr.Lat(), cntr.Lon())
